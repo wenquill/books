@@ -1,14 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { observer } from "mobx-react";
 
+import { useController } from "../Shared/useController";
 import { BooksController } from "./Books.controller";
 
 export const BooksView = observer(() => {
-  const [controller] = useState(() => new BooksController());
-
-  useEffect(() => {
-    controller.load();
-  }, [controller]);
+  const controller = useController(() => new BooksController());
 
   return (
     <div>
