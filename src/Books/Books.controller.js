@@ -1,5 +1,6 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import booksRepository from "./Books.repository";
+import { privateBooksStore } from "../stores/PrivateBooks.store";
 
 export class BooksController {
   books = [];
@@ -8,9 +9,10 @@ export class BooksController {
   name = "";
   author = "";
 
-  constructor(repository = booksRepository) {
+  constructor(repository = booksRepository, store = privateBooksStore) {
     this.repository = repository;
-    makeAutoObservable(this, { repository: false });
+    this.store = store;
+    makeAutoObservable(this, { repository: false, store: false });
   }
 
   get bookLines() {
@@ -71,6 +73,6 @@ export class BooksController {
       this.name = "";
       this.author = "";
     });
-    await this.load();
+    await Promise.all([this.load(), this.store.refreshPrivateCount()]);
   };
 }
