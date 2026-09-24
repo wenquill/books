@@ -6,10 +6,43 @@ const createRepositoryStub = (books = [], privateBooks = []) => ({
   addBook: jest.fn(async () => true)
 });
 
+const createStoreStub = () => ({
+  refreshPrivateCount: jest.fn(async () => {})
+});
+
+const createController = (repository, store = createStoreStub()) =>
+  new BooksController(repository, store);
+
 describe("BooksController", () => {
+  describe("private books counter", () => {
+    it("refreshes the counter after a book is added", async () => {
+      const store = createStoreStub();
+      const controller = createController(createRepositoryStub(), store);
+      controller.setName("Dune");
+      controller.setAuthor("Herbert");
+
+      await controller.addBook();
+
+      expect(store.refreshPrivateCount).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not refresh the counter when the book was not added", async () => {
+      const store = createStoreStub();
+      const repository = createRepositoryStub();
+      repository.addBook.mockResolvedValue(false);
+      const controller = createController(repository, store);
+      controller.setName("Dune");
+      controller.setAuthor("Herbert");
+
+      await controller.addBook();
+
+      expect(store.refreshPrivateCount).not.toHaveBeenCalled();
+    });
+  });
+
   describe("mode switch", () => {
     it("shows all books by default", () => {
-      const controller = new BooksController(createRepositoryStub());
+      const controller = createController(createRepositoryStub());
 
       expect(controller.isAllMode).toBe(true);
       expect(controller.isPrivateMode).toBe(false);
@@ -17,7 +50,7 @@ describe("BooksController", () => {
 
     it("loads all books, not private ones, in the default mode", async () => {
       const repository = createRepositoryStub();
-      const controller = new BooksController(repository);
+      const controller = createController(repository);
 
       await controller.load();
 
@@ -30,7 +63,7 @@ describe("BooksController", () => {
         [{ author: "Tolkien", name: "The Hobbit" }],
         [{ author: "Herbert", name: "Dune" }]
       );
-      const controller = new BooksController(repository);
+      const controller = createController(repository);
 
       await controller.setMode("private");
 
@@ -44,7 +77,7 @@ describe("BooksController", () => {
         [{ author: "Tolkien", name: "The Hobbit" }],
         [{ author: "Herbert", name: "Dune" }]
       );
-      const controller = new BooksController(repository);
+      const controller = createController(repository);
       await controller.setMode("private");
 
       await controller.setMode("all");
@@ -54,7 +87,7 @@ describe("BooksController", () => {
 
     it("reloads the private list after adding a book in the private mode", async () => {
       const repository = createRepositoryStub();
-      const controller = new BooksController(repository);
+      const controller = createController(repository);
       await controller.setMode("private");
       repository.getPrivateBooks.mockClear();
       controller.setName("Dune");
@@ -68,7 +101,7 @@ describe("BooksController", () => {
   });
 
   it("starts with an empty list", () => {
-    const controller = new BooksController(createRepositoryStub());
+    const controller = createController(createRepositoryStub());
 
     expect(controller.bookLines).toEqual([]);
     expect(controller.isLoading).toBe(false);
@@ -79,7 +112,7 @@ describe("BooksController", () => {
       { author: "Tolkien", name: "The Hobbit" },
       { author: "Asimov", name: "I, Robot" }
     ]);
-    const controller = new BooksController(repository);
+    const controller = createController(repository);
 
     await controller.load();
 
@@ -90,7 +123,7 @@ describe("BooksController", () => {
   });
 
   it("is loading while the books are being fetched", async () => {
-    const controller = new BooksController(createRepositoryStub());
+    const controller = createController(createRepositoryStub());
 
     const loading = controller.load();
     expect(controller.isLoading).toBe(true);
@@ -101,7 +134,7 @@ describe("BooksController", () => {
 
   it("adds a book from the form fields and reloads the list", async () => {
     const repository = createRepositoryStub();
-    const controller = new BooksController(repository);
+    const controller = createController(repository);
     controller.setName("Dune");
     controller.setAuthor("Herbert");
 
@@ -115,7 +148,7 @@ describe("BooksController", () => {
   });
 
   it("clears the form after the book is added", async () => {
-    const controller = new BooksController(createRepositoryStub());
+    const controller = createController(createRepositoryStub());
     controller.setName("Dune");
     controller.setAuthor("Herbert");
 
@@ -127,7 +160,7 @@ describe("BooksController", () => {
 
   it("does not add a book when the name or author is empty", async () => {
     const repository = createRepositoryStub();
-    const controller = new BooksController(repository);
+    const controller = createController(repository);
     controller.setName("Dune");
 
     await controller.addBook();
@@ -138,7 +171,7 @@ describe("BooksController", () => {
   it("keeps the form filled when the book was not added", async () => {
     const repository = createRepositoryStub();
     repository.addBook.mockResolvedValue(false);
-    const controller = new BooksController(repository);
+    const controller = createController(repository);
     controller.setName("Dune");
     controller.setAuthor("Herbert");
 
