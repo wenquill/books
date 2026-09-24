@@ -40,6 +40,87 @@ describe("BooksController", () => {
     });
   });
 
+  describe("outdated responses", () => {
+    it("ignores a slow response of a previous mode", async () => {
+      const repository = createRepositoryStub(
+        [],
+        [{ author: "Herbert", name: "Dune" }]
+      );
+      let resolveAllBooks;
+      repository.getBooks.mockImplementation(
+        () => new Promise((resolve) => (resolveAllBooks = resolve))
+      );
+      const controller = createController(repository);
+
+      const loadingAll = controller.load();
+      await controller.setMode("private");
+      resolveAllBooks([{ author: "Tolkien", name: "The Hobbit" }]);
+      await loadingAll;
+
+      expect(controller.bookLines).toEqual(["Herbert: Dune"]);
+    });
+
+    it("stays loading until the response of the current mode arrives", async () => {
+      const repository = createRepositoryStub();
+      let resolveAllBooks;
+      let resolvePrivateBooks;
+      repository.getBooks.mockImplementation(
+        () => new Promise((resolve) => (resolveAllBooks = resolve))
+      );
+      repository.getPrivateBooks.mockImplementation(
+        () => new Promise((resolve) => (resolvePrivateBooks = resolve))
+      );
+      const controller = createController(repository);
+
+      const loadingAll = controller.load();
+      const switching = controller.setMode("private");
+      resolveAllBooks([]);
+      await loadingAll;
+      expect(controller.isLoading).toBe(true);
+
+      resolvePrivateBooks([]);
+      await switching;
+      expect(controller.isLoading).toBe(false);
+    });
+  });
+
+  describe("actions for the view", () => {
+    it("shows private books via showPrivate and all books via showAll", async () => {
+      const repository = createRepositoryStub(
+        [{ author: "Tolkien", name: "The Hobbit" }],
+        [{ author: "Herbert", name: "Dune" }]
+      );
+      const controller = createController(repository);
+
+      await controller.showPrivate();
+      expect(controller.bookLines).toEqual(["Herbert: Dune"]);
+
+      await controller.showAll();
+      expect(controller.bookLines).toEqual(["Tolkien: The Hobbit"]);
+    });
+
+    it("fills the form from input events", () => {
+      const controller = createController(createRepositoryStub());
+
+      controller.onNameChange({ target: { value: "Dune" } });
+      controller.onAuthorChange({ target: { value: "Herbert" } });
+
+      expect(controller.name).toBe("Dune");
+      expect(controller.author).toBe("Herbert");
+    });
+
+    it("disables the add button until both fields are filled", () => {
+      const controller = createController(createRepositoryStub());
+      expect(controller.isAddDisabled).toBe(true);
+
+      controller.setName("Dune");
+      expect(controller.isAddDisabled).toBe(true);
+
+      controller.setAuthor("Herbert");
+      expect(controller.isAddDisabled).toBe(false);
+    });
+  });
+
   describe("mode switch", () => {
     it("shows all books by default", () => {
       const controller = createController(createRepositoryStub());
