@@ -23,6 +23,10 @@ export class BooksController {
     return Boolean(this.name.trim() && this.author.trim());
   }
 
+  get isAddDisabled() {
+    return !this.canAdd;
+  }
+
   get isAllMode() {
     return this.mode === "all";
   }
@@ -36,6 +40,10 @@ export class BooksController {
     await this.load();
   };
 
+  showAll = () => this.setMode("all");
+
+  showPrivate = () => this.setMode("private");
+
   setName = (name) => {
     this.name = name;
   };
@@ -44,18 +52,24 @@ export class BooksController {
     this.author = author;
   };
 
+  onNameChange = (event) => this.setName(event.target.value);
+
+  onAuthorChange = (event) => this.setAuthor(event.target.value);
+
   load = async () => {
+    const mode = this.mode;
     this.isLoading = true;
     try {
-      const books = this.isPrivateMode
-        ? await this.repository.getPrivateBooks()
-        : await this.repository.getBooks();
+      const books =
+        mode === "private"
+          ? await this.repository.getPrivateBooks()
+          : await this.repository.getBooks();
       runInAction(() => {
-        this.books = books;
+        if (mode === this.mode) this.books = books;
       });
     } finally {
       runInAction(() => {
-        this.isLoading = false;
+        if (mode === this.mode) this.isLoading = false;
       });
     }
   };

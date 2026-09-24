@@ -9,15 +9,12 @@ export const BooksView = observer(() => {
 
   return (
     <div>
-      <button
-        disabled={controller.isAllMode}
-        onClick={() => controller.setMode("all")}
-      >
+      <button disabled={controller.isAllMode} onClick={controller.showAll}>
         All books
       </button>
       <button
         disabled={controller.isPrivateMode}
-        onClick={() => controller.setMode("private")}
+        onClick={controller.showPrivate}
       >
         Private books
       </button>
@@ -27,14 +24,14 @@ export const BooksView = observer(() => {
       <input
         placeholder="Name"
         value={controller.name}
-        onChange={(e) => controller.setName(e.target.value)}
+        onChange={controller.onNameChange}
       />
       <input
         placeholder="Author"
         value={controller.author}
-        onChange={(e) => controller.setAuthor(e.target.value)}
+        onChange={controller.onAuthorChange}
       />
-      <button disabled={!controller.canAdd} onClick={controller.addBook}>
+      <button disabled={controller.isAddDisabled} onClick={controller.addBook}>
         Add
       </button>
     </div>
