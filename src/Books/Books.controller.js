@@ -3,6 +3,7 @@ import booksRepository from "./Books.repository";
 
 export class BooksController {
   books = [];
+  mode = "all";
   isLoading = false;
   name = "";
   author = "";
@@ -20,6 +21,19 @@ export class BooksController {
     return Boolean(this.name.trim() && this.author.trim());
   }
 
+  get isAllMode() {
+    return this.mode === "all";
+  }
+
+  get isPrivateMode() {
+    return this.mode === "private";
+  }
+
+  setMode = async (mode) => {
+    this.mode = mode;
+    await this.load();
+  };
+
   setName = (name) => {
     this.name = name;
   };
@@ -31,7 +45,9 @@ export class BooksController {
   load = async () => {
     this.isLoading = true;
     try {
-      const books = await this.repository.getBooks();
+      const books = this.isPrivateMode
+        ? await this.repository.getPrivateBooks()
+        : await this.repository.getBooks();
       runInAction(() => {
         this.books = books;
       });

@@ -12,6 +12,18 @@ export const BooksView = observer(() => {
 
   return (
     <div>
+      <button
+        disabled={controller.isAllMode}
+        onClick={() => controller.setMode("all")}
+      >
+        All books
+      </button>
+      <button
+        disabled={controller.isPrivateMode}
+        onClick={() => controller.setMode("private")}
+      >
+        Private books
+      </button>
       {controller.bookLines.map((line, i) => (
         <div key={i}>{line}</div>
       ))}
