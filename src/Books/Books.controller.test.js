@@ -1,11 +1,72 @@
 import { BooksController } from "./Books.controller";
 
-const createRepositoryStub = (books = []) => ({
+const createRepositoryStub = (books = [], privateBooks = []) => ({
   getBooks: jest.fn(async () => books),
+  getPrivateBooks: jest.fn(async () => privateBooks),
   addBook: jest.fn(async () => true)
 });
 
 describe("BooksController", () => {
+  describe("mode switch", () => {
+    it("shows all books by default", () => {
+      const controller = new BooksController(createRepositoryStub());
+
+      expect(controller.isAllMode).toBe(true);
+      expect(controller.isPrivateMode).toBe(false);
+    });
+
+    it("loads all books, not private ones, in the default mode", async () => {
+      const repository = createRepositoryStub();
+      const controller = new BooksController(repository);
+
+      await controller.load();
+
+      expect(repository.getBooks).toHaveBeenCalledTimes(1);
+      expect(repository.getPrivateBooks).not.toHaveBeenCalled();
+    });
+
+    it("loads and shows private books after switching to the private mode", async () => {
+      const repository = createRepositoryStub(
+        [{ author: "Tolkien", name: "The Hobbit" }],
+        [{ author: "Herbert", name: "Dune" }]
+      );
+      const controller = new BooksController(repository);
+
+      await controller.setMode("private");
+
+      expect(controller.isPrivateMode).toBe(true);
+      expect(controller.isAllMode).toBe(false);
+      expect(controller.bookLines).toEqual(["Herbert: Dune"]);
+    });
+
+    it("shows all books again after switching back", async () => {
+      const repository = createRepositoryStub(
+        [{ author: "Tolkien", name: "The Hobbit" }],
+        [{ author: "Herbert", name: "Dune" }]
+      );
+      const controller = new BooksController(repository);
+      await controller.setMode("private");
+
+      await controller.setMode("all");
+
+      expect(controller.bookLines).toEqual(["Tolkien: The Hobbit"]);
+    });
+
+    it("reloads the private list after adding a book in the private mode", async () => {
+      const repository = createRepositoryStub();
+      const controller = new BooksController(repository);
+      await controller.setMode("private");
+      repository.getPrivateBooks.mockClear();
+      controller.setName("Dune");
+      controller.setAuthor("Herbert");
+
+      await controller.addBook();
+
+      expect(repository.getPrivateBooks).toHaveBeenCalledTimes(1);
+      expect(repository.getBooks).not.toHaveBeenCalled();
+    });
+  });
+
   it("starts with an empty list", () => {
     const controller = new BooksController(createRepositoryStub());
 
